@@ -7,13 +7,14 @@ usage:
 
 import logging
 import math
+import os
 import sys
 import time
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from spectclean.time_series import sim_time_series
+from spectclean.time_series import load_times, sim_time_series
 
 # Require python3
 if sys.version_info[0] != 3 or sys.version_info[1] < 5:
@@ -48,6 +49,7 @@ def main():
     log.info('* Generating time series...')
     times, values = sim_time_series(length_days, min_sample_interval,
                                     num_samples, signals, noise_std)
+    # times, values = load_times(os.path.join('data', 'all_sort.dat'))
     delta_time = np.diff(times)
     log.info('')
 
@@ -67,12 +69,12 @@ def main():
     log.info('  - Max frequency (mean)   = %.4f days^-1', max_frequency_mean)
     log.info('  - Frequency increment    = %.4f days^-1', freq_inc)
 
-    max_frequency = input('> Enter maximum frequency '
+    max_frequency = float(input('> Enter maximum frequency '
                           '(default = {:.4f} days^-1): '
-                          .format(max_frequency)) or max_frequency
-    freq_inc = input('> Enter frequency increment'
+                          .format(max_frequency)) or max_frequency)
+    freq_inc = float(input('> Enter frequency increment'
                      '(default = {:.4f} days^-1): '
-                     .format(freq_inc)) or freq_inc
+                     .format(freq_inc)) or freq_inc)
 
     min_frequency = 0
     freq_range = max_frequency - min_frequency

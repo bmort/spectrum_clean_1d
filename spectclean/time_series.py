@@ -69,19 +69,18 @@ def sim_time_series(length_days=2000, min_sample_interval=0.5,
     return times, values
 
 
-def load_times(file_name, zero=True):
+def load_times(file_name):
     """Load a time series.
 
     Assumes 2 columns of data, space separated.
 
     Args:
         file_name (str): File name to load.
-        zero (bool, optional): If true, zero time series.
     """
     data = np.loadtxt(file_name)
     time = data[:, 0]
     amp = data[:, 1]
-    if zero:
-        time = time - time[0]
+    amp -= np.mean(amp)
+    time -= time[0]
     return time, amp
 
