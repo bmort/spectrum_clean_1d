@@ -1,8 +1,20 @@
 # coding: utf-8
-"""Main time series cleaning script.
+"""Very quick hack of a time series cleaning script.
+
+To use with a time series in a file, uncomment the load_times() function on
+line ~64 and remove plotting references to the 'signals' list.
+
+Note: that with irregular time series the maximum frequency and frequency
+increment used to generate the spectrum are hard to define programmatically
+so some experimentation will likely be needed for these parameters.
+
+For very poorly sampled time series it will likely also be necessary to
+decrease CLEAN gain and up number of CLEAN iterations.
 
 usage:
     $ python3 main.py
+
+.. moduleauthor:: Benjamin Mort <benjamin.mort@oerc.ox.ac.uk>
 """
 
 import logging
