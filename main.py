@@ -199,7 +199,7 @@ def main():
     clean_spectrum *= 2.0
 
     # Add back last residual
-    # clean_spectrum += residual # FIXME(BM)
+    clean_spectrum += residual
 
     # Plotting
     c = freqs.size // 2
