@@ -7,3 +7,4 @@
 - Unit tests?!
 - Interactive plotting with stop prompt key capture
 - Accelerate using multiple threads (via C extension?)
+- Refactor to only need to calculate DFT for positive frequencies?

@@ -54,7 +54,6 @@ def sim_time_series(length_days=2000, min_sample_interval=0.5,
     log.debug('- Total possible times = %i', total_times)
     log.debug('- No. times generated = %i', times.size)
     log.debug('- Min. sampling interval = %f', min_sample_interval)
-    log.debug('- Sample fraction = %f', (num_samples / total_times))
 
     # Add signals
     values = np.zeros_like(times)

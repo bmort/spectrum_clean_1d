@@ -25,6 +25,7 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import signal
 
 from spectclean.time_series import load_times, sim_time_series
 
@@ -43,12 +44,14 @@ def main():
     log.setLevel('DEBUG')
 
     # Generate test time series.
-    # TODO(BM) add duty cycle to sampling
     length_days = 4000
-    min_sample_interval = 0.13
+    min_sample_interval = 0.1
     sample_fraction = 0.01
     noise_std = 0.1
-    num_samples = (length_days / min_sample_interval) * sample_fraction
+    duty_period = 50
+    duty_length = 20
+    num_samples = (((length_days / min_sample_interval) * sample_fraction) *
+                   (duty_period / duty_length))
     num_samples = int(num_samples)
 
     # Amplitude, frequency (days^-1), phase (fraction of 2pi)
@@ -62,6 +65,16 @@ def main():
     log.info('* Generating time series...')
     times, values = sim_time_series(length_days, min_sample_interval,
                                     num_samples, signals, noise_std)
+
+    duty_samples = np.ones_like(times)
+    duty_samples[np.mod(range(times.size), duty_period) > duty_length] = 0
+    # fig, ax = plt.subplots()
+    # ax.plot(duty_samples)
+    # plt.show()
+    times = times[duty_samples == 1]
+    values = values[duty_samples == 1]
+    log.debug('- No. times after duty sampling = %i', times.size)
+
     # times, values = load_times(os.path.join('data', 'all_sort.dat'))
     delta_time = np.diff(times)
     log.info('')
@@ -104,9 +117,9 @@ def main():
     # -fs -> fs
     freqs = np.arange(-num_freqs, num_freqs + 1) * freq_inc
     amps = np.zeros_like(freqs, dtype='c16')
-    for iter, f in enumerate(freqs):
+    for i, f in enumerate(freqs):
         phase = np.exp(-1j * 2 * math.pi * f * times)
-        amps[iter] += np.sum(values * phase)
+        amps[i] += np.sum(values * phase)
     amps /= times.size
     log.info('* Done (%.4f s)', (time.time() - t0))
 
@@ -114,9 +127,9 @@ def main():
     log.info('* Generating PSF ...')
     freqs_psf = np.arange(-num_freqs * 2, num_freqs * 2 + 1) * freq_inc
     psf = np.zeros_like(freqs_psf, dtype='c16')
-    for iter, f in enumerate(freqs_psf):
+    for i, f in enumerate(freqs_psf):
         phase = np.exp(-1j * 2 * math.pi * f * times)
-        psf[iter] += np.sum(phase)
+        psf[i] += np.sum(phase)
     psf /= times.size
     log.info('* Done (%.4f s)', (time.time() - t0))
 
