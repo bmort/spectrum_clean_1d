@@ -56,11 +56,11 @@ def main():
 
     # Amplitude, frequency (days^-1), phase (fraction of 2pi)
     signals = [
-        dict(amp=1.0, freq=1/20, phase=0.25),
-        dict(amp=0.5, freq=1/75, phase=0.0),
-        dict(amp=0.5, freq=0.04, phase=0.0),
         dict(amp=0.15, freq=0.01, phase=0.0),
-        dict(amp=1.0, freq=1/50, phase=-0.2),
+        dict(amp=0.5, freq=0.01333, phase=0.0),
+        dict(amp=0.8, freq=0.02, phase=-0.2),
+        dict(amp=0.2, freq=0.04, phase=0.0),
+        dict(amp=1.5, freq=0.05, phase=0.25),
     ]
     log.info('* Generating time series...')
     times, values = sim_time_series(length_days, min_sample_interval,
@@ -143,27 +143,20 @@ def main():
     t0 = time.time()
     clean_components = np.zeros_like(amps)
     residual = np.copy(amps)
+    c = residual.size // 2
     for iter in range(num_iter):
-        # Find maximum residual
-        c = amps.shape[0] // 2
-        idx_max = c + np.argmax(residual[c:])
+        # Find maximum peak in the spectrum for freq > 0
+        idx_max = c + np.argmax(residual[c+1:]) + 1
 
         # Amp of the residual at the peak
         res_max = residual[idx_max]
 
-        # Magnitude (abs) of the PSF contribution from the negative frequency
-        # peak.
+        # Value of PSF contribution from the -ve frequency peak.
         psf_at_max = psf[idx_max * 2]
-
-        temp = 1 - np.abs(psf_at_max)**2
-        if temp == 0:
-            log.warning('WARNING: Exiting CLEAN at iter %i (idx_max = %i)!',
-                        iter, idx_max)
-            break
 
         # Amplitude of the peak, correcting for the PSF contribution of the -ve
         # frequency peak
-        amp_max = (res_max * (1 - psf_at_max)) / temp
+        amp_max = (res_max * (1 - psf_at_max)) / (1 - np.abs(psf_at_max)**2)
 
         # Append to clean component
         clean_components[idx_max] += amp_max * gain
