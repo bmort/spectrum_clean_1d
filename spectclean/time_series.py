@@ -1,5 +1,5 @@
 # coding: utf-8
-"""Module with functions for handling time series.
+"""Functions for handling time series.
 
 .. moduleauthor:: Benjamin Mort <benjamin.mort@oerc.ox.ac.uk>
 """
