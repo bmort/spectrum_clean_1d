@@ -23,11 +23,19 @@ def sim_time_series(length_days=2000, min_sample_interval=0.5,
             (see example below).
         noise_std (float): Noise amplitude STD.
 
-    Example
-            A signal definition dictionary contains the following fields:
-            'amp': the signal amplitude,
-            'freq': signal frequency in days^-1
-            'phase': signal phase as fraction of 2pi.
+    Signals in the time series are specified with a list of dictionaries, where
+    each dictionary represents a different signal component.
+
+    The signal definition dictionary contains the following fields:
+    - 'amp': the signal amplitude,
+    - 'freq': signal frequency, in days^-1
+    - 'phase': signal phase, in units of pi.
+
+    For example to specify two signal components the following list could be
+    used:
+
+        signals = [dict(amp=1.0, freq=0.05, phase=0.0),
+                   dict(amp=0.5, freq=0.1, phase=0.0)]
 
     Returns:
         tuple (numpy.array, numpy.array): times, values
@@ -54,7 +62,7 @@ def sim_time_series(length_days=2000, min_sample_interval=0.5,
     for i, s in enumerate(signals):
         log.debug('  [%02i] amp=%f, freq=%f, phase=%f',
                   i, s['amp'], s['freq'], s['phase'])
-        arg = 2 * math.pi * (times * s['freq'] + s['phase'])
+        arg = 2 * math.pi * times * s['freq'] + s['phase'] * math.pi
         values += s['amp'] * np.cos(arg)
 
     # Add noise
@@ -72,15 +80,22 @@ def sim_time_series(length_days=2000, min_sample_interval=0.5,
 def load_times(file_name):
     """Load a time series.
 
-    Assumes 2 columns of data, space separated.
+    Assumes 2 columns space separated data.
 
     Args:
-        file_name (str): File name to load.
+        file_name (str): File name (path) to load.
+
+    Returns:
+        tuple (numpy.array, numpy.array): times, values
+        Array of times and values.
     """
     data = np.loadtxt(file_name)
-    time = data[:, 0]
-    amp = data[:, 1]
-    amp -= np.mean(amp)
-    time -= time[0]
-    return time, amp
+    times = data[:, 0]
+    values = data[:, 1]
+
+    # Remove the mean amplitude and shift time origin
+    times -= times[0]
+    values -= np.mean(values)
+
+    return times, values
 

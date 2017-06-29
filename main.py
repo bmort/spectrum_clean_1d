@@ -52,11 +52,11 @@ def main():
 
     # Amplitude, frequency (days^-1), phase (fraction of 2pi)
     signals = [
-        dict(amp=1.0, freq=1/20, phase=0.0),
-        dict(amp=0.2, freq=1/75, phase=0.0),
+        dict(amp=1.0, freq=1/20, phase=0.25),
+        dict(amp=0.5, freq=1/75, phase=0.0),
         dict(amp=0.5, freq=0.04, phase=0.0),
         dict(amp=0.15, freq=0.01, phase=0.0),
-        dict(amp=1.0, freq=1/50, phase=0.0),
+        dict(amp=1.0, freq=1/50, phase=-0.2),
     ]
     log.info('* Generating time series...')
     times, values = sim_time_series(length_days, min_sample_interval,
@@ -135,37 +135,31 @@ def main():
         idx_max = c + np.argmax(residual[c:])
 
         # Amp of the residual at the peak
-        res_amp = residual[idx_max]
+        res_max = residual[idx_max]
 
         # Magnitude (abs) of the PSF contribution from the negative frequency
         # peak.
-        psf_mag = np.abs(psf[idx_max * 2])
-        # print(psf_amp)
+        psf_at_max = psf[idx_max * 2]
 
-        temp = 1 - psf_mag**2
+        temp = 1 - np.abs(psf_at_max)**2
         if temp == 0:
-            log.warning('EEK, divide by zero for iter = %i!', i)
+            log.warning('Exiting CLEAN at iter %i!', i)
             break
 
         # Amplitude of the peak, correcting for the PSF contribution of the -ve
-        # frequency peak??
-        aRe = res_amp.real * (1 - psf_mag.real) - (res_amp.imag * psf_mag.imag)
-        aRe /= temp
-        aIm = res_amp.imag * (1 + psf_mag.real) - (res_amp.real * psf_mag.imag)
-        aIm /= temp
+        # frequency peak
+        amp_max = (res_max * (1 - psf_at_max)) / temp
 
         # Append to clean component
-        clean_components[idx_max] += (aRe + 1j * aIm) * gain
+        clean_components[idx_max] += amp_max * gain
 
         # Update residual spectrum by subtracting the PSF
         sub = np.zeros_like(residual)
         for j in range(freqs.size):
-            w1 = psf[j - idx_max + (freqs.size - 1)]
-            w2 = psf[j + idx_max]
-            re = aRe * (w1.real + w2.real) + aIm * (w2.imag - w1.imag)
-            im = aRe * (w1.imag + w2.imag) + aIm * (w1.real - w2.real)
-            sub[j] = (re + 1j * im)
-            sub[j] *= gain
+            psf_plus = psf[j - idx_max + (freqs.size - 1)]
+            psf_minus = psf[j + idx_max]
+            sub[j] = (amp_max * psf_plus + np.conj(amp_max) * psf_minus) * gain
+
         residual -= sub
 
     log.info('* Done (%.4f s)', (time.time() - t0))
@@ -193,7 +187,7 @@ def main():
     clean_spectrum *= 2.0
 
     # Add back last residual
-    clean_spectrum += residual
+    # clean_spectrum += residual # FIXME(BM)
 
     # Plotting
     c = freqs.size // 2
