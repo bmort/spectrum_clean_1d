@@ -43,9 +43,10 @@ def main():
     log.setLevel('DEBUG')
 
     # Generate test time series.
-    length_days = 2000
-    min_sample_interval = 0.2
-    sample_fraction = 0.02
+    # TODO(BM) add duty cycle to sampling
+    length_days = 4000
+    min_sample_interval = 0.13
+    sample_fraction = 0.01
     noise_std = 0.1
     num_samples = (length_days / min_sample_interval) * sample_fraction
     num_samples = int(num_samples)
@@ -103,9 +104,9 @@ def main():
     # -fs -> fs
     freqs = np.arange(-num_freqs, num_freqs + 1) * freq_inc
     amps = np.zeros_like(freqs, dtype='c16')
-    for i, f in enumerate(freqs):
+    for iter, f in enumerate(freqs):
         phase = np.exp(-1j * 2 * math.pi * f * times)
-        amps[i] += np.sum(values * phase)
+        amps[iter] += np.sum(values * phase)
     amps /= times.size
     log.info('* Done (%.4f s)', (time.time() - t0))
 
@@ -113,9 +114,9 @@ def main():
     log.info('* Generating PSF ...')
     freqs_psf = np.arange(-num_freqs * 2, num_freqs * 2 + 1) * freq_inc
     psf = np.zeros_like(freqs_psf, dtype='c16')
-    for i, f in enumerate(freqs_psf):
+    for iter, f in enumerate(freqs_psf):
         phase = np.exp(-1j * 2 * math.pi * f * times)
-        psf[i] += np.sum(phase)
+        psf[iter] += np.sum(phase)
     psf /= times.size
     log.info('* Done (%.4f s)', (time.time() - t0))
 
@@ -129,8 +130,8 @@ def main():
     t0 = time.time()
     clean_components = np.zeros_like(amps)
     residual = np.copy(amps)
-    for i in range(num_iter):
-        # 1. Find maximum residual
+    for iter in range(num_iter):
+        # Find maximum residual
         c = amps.shape[0] // 2
         idx_max = c + np.argmax(residual[c:])
 
@@ -143,7 +144,8 @@ def main():
 
         temp = 1 - np.abs(psf_at_max)**2
         if temp == 0:
-            log.warning('Exiting CLEAN at iter %i!', i)
+            log.warning('WARNING: Exiting CLEAN at iter %i (idx_max = %i)!',
+                        iter, idx_max)
             break
 
         # Amplitude of the peak, correcting for the PSF contribution of the -ve
@@ -153,14 +155,11 @@ def main():
         # Append to clean component
         clean_components[idx_max] += amp_max * gain
 
-        # Update residual spectrum by subtracting the PSF
-        sub = np.zeros_like(residual)
-        for j in range(freqs.size):
-            psf_plus = psf[j - idx_max + (freqs.size - 1)]
-            psf_minus = psf[j + idx_max]
-            sub[j] = (amp_max * psf_plus + np.conj(amp_max) * psf_minus) * gain
-
-        residual -= sub
+        # Update residual spectrum by subtracting the PSF for the +'ve and -'ve
+        # frequency peaks.
+        psf_plus = psf[range(freqs.size) - idx_max + freqs.size - 1]
+        psf_minus = psf[range(freqs.size) + idx_max]
+        residual -= (amp_max * psf_plus + np.conj(amp_max) * psf_minus) * gain
 
     log.info('* Done (%.4f s)', (time.time() - t0))
 
