@@ -89,6 +89,7 @@ def load_times(file_name):
         Array of times and values.
     """
     data = np.loadtxt(file_name)
+    data = data[data[:, 0].argsort()]
     times = data[:, 0]
     values = data[:, 1]
 
